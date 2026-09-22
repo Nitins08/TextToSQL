@@ -23,6 +23,7 @@ public class SchemaService {
                 SELECT TABLE_NAME
                 FROM INFORMATION_SCHEMA.TABLES
                 WHERE TABLE_SCHEMA = 'PUBLIC'
+                AND TABLE_NAME <> 'QUERY_HISTORY'
                 """;
 
         return jdbcTemplate.queryForList(sql);
@@ -34,6 +35,7 @@ public class SchemaService {
                 SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE
                 FROM INFORMATION_SCHEMA.COLUMNS
                 WHERE TABLE_SCHEMA = 'PUBLIC'
+                AND TABLE_NAME <> 'QUERY_HISTORY'
                 ORDER BY TABLE_NAME, ORDINAL_POSITION
                 """;
 
@@ -57,6 +59,7 @@ public class SchemaService {
                     AND rc.UNIQUE_CONSTRAINT_NAME = pk.CONSTRAINT_NAME
                     AND fk.POSITION_IN_UNIQUE_CONSTRAINT = pk.ORDINAL_POSITION
                 WHERE fk.CONSTRAINT_SCHEMA = 'PUBLIC'
+                AND fk.TABLE_NAME <> 'QUERY_HISTORY'
                 ORDER BY fk.TABLE_NAME, fk.ORDINAL_POSITION
                 """;
 
@@ -69,6 +72,7 @@ public class SchemaService {
                 SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE
                 FROM INFORMATION_SCHEMA.COLUMNS
                 WHERE TABLE_SCHEMA = 'PUBLIC'
+                AND TABLE_NAME <> 'QUERY_HISTORY'
                 ORDER BY TABLE_NAME, ORDINAL_POSITION
                 """;
 
@@ -98,6 +102,7 @@ public class SchemaService {
                     AND rc.UNIQUE_CONSTRAINT_NAME = pk.CONSTRAINT_NAME
                     AND fk.POSITION_IN_UNIQUE_CONSTRAINT = pk.ORDINAL_POSITION
                 WHERE fk.CONSTRAINT_SCHEMA = 'PUBLIC'
+                AND fk.TABLE_NAME <> 'QUERY_HISTORY'
                 ORDER BY fk.TABLE_NAME, fk.ORDINAL_POSITION
                 """;
 
@@ -123,7 +128,8 @@ public class SchemaService {
 
         for (Map<String, Object> table : tables) {
 
-            String tableName = (String) table.get("TABLE_NAME");
+            String tableName =
+                    (String) table.get("TABLE_NAME");
 
             schema.append("TABLE: ")
                     .append(tableName)

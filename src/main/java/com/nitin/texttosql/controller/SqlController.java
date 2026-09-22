@@ -1,5 +1,6 @@
 package com.nitin.texttosql.controller;
 
+import com.nitin.texttosql.model.QueryResponse;
 import com.nitin.texttosql.service.SqlService;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,9 +14,10 @@ public class SqlController {
         this.sqlService = sqlService;
     }
 
-    @PostMapping("/generate")
-    public String generateSql(@RequestBody String question) {
+    @PostMapping("/ask")
+    public QueryResponse askDatabase(
+            @RequestBody String question) {
 
-        return sqlService.generateSql(question);
+        return sqlService.generateAndExecute(question);
     }
 }
