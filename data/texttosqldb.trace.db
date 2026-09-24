@@ -1,3 +1,0 @@
-2026-09-22 11:29:57.014198+05:30 jdbc[3]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" already exists; SQL statement:
-CREATE TABLE users ( id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), city VARCHAR(50) ) [42101-232]

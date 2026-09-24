@@ -1,5 +1,6 @@
 package com.nitin.texttosql.exception;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +33,20 @@ public class GlobalExceptionHandler {
                 .body(Map.of(
                         "error", "Database constraint violation",
                         "message",
-                        "The operation could not be completed because it would violate a database constraint."
+                        "The operation could not be completed because it violates a database constraint."
+                ));
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<Map<String, String>> handleDataAccessException(
+            DataAccessException exception) {
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "Database error",
+                        "message",
+                        "The generated SQL could not be executed by the database."
                 ));
     }
 

@@ -15,6 +15,21 @@ public class SqlWriteSafetyService {
             "orders"
     };
 
+    private static final String[] DANGEROUS_KEYWORDS = {
+            "drop",
+            "alter",
+            "truncate",
+            "create",
+            "merge",
+            "grant",
+            "revoke",
+            "call",
+            "execute",
+            "commit",
+            "rollback",
+            "savepoint"
+    };
+
     public boolean areWritesEnabled() {
         return writesEnabled;
     }
@@ -25,7 +40,7 @@ public class SqlWriteSafetyService {
             return false;
         }
 
-        String normalizedSql = sql.trim().toLowerCase();
+        String normalizedSql = normalize(sql);
 
         return normalizedSql.startsWith("insert ")
                 || normalizedSql.startsWith("update ")
@@ -34,90 +49,86 @@ public class SqlWriteSafetyService {
 
     public boolean isSafeWrite(String sql) {
 
-        if (!writesEnabled) {
+        if (!writesEnabled || !isWriteOperation(sql)) {
             return false;
         }
 
-        if (!isWriteOperation(sql)) {
+        String normalizedSql = normalize(sql);
+
+        if (containsMultipleStatements(normalizedSql)) {
             return false;
         }
 
-        String normalizedSql = sql.trim().toLowerCase();
-
-        /*
-         * Remove one trailing semicolon.
-         */
-        String withoutTrailingSemicolon =
-                normalizedSql.replaceAll(";\\s*$", "");
-
-        /*
-         * Reject multiple SQL statements.
-         */
-        if (withoutTrailingSemicolon.contains(";")) {
+        if (containsComments(normalizedSql)) {
             return false;
         }
 
-        /*
-         * Reject SQL comments.
-         */
-        if (normalizedSql.contains("--")
-                || normalizedSql.contains("/*")
-                || normalizedSql.contains("*/")) {
+        if (containsDangerousKeyword(normalizedSql)) {
             return false;
         }
 
-        /*
-         * Reject dangerous database operations.
-         */
-        String[] dangerousKeywords = {
-                "drop",
-                "alter",
-                "truncate",
-                "create",
-                "merge",
-                "grant",
-                "revoke",
-                "call",
-                "execute"
-        };
-
-        for (String keyword : dangerousKeywords) {
-
-            if (normalizedSql.matches(
-                    ".*\\b" + keyword + "\\b.*")) {
-
-                return false;
-            }
-        }
-
-        /*
-         * UPDATE and DELETE must contain WHERE.
-         */
-        if (normalizedSql.startsWith("update ")
-                || normalizedSql.startsWith("delete ")) {
-
-            if (!normalizedSql.matches(".*\\bwhere\\b.*")) {
-                return false;
-            }
-        }
-
-        /*
-         * Verify that the write targets an allowed table.
-         */
         if (!usesAllowedTable(normalizedSql)) {
+            return false;
+        }
+
+        if (isUpdateOrDelete(normalizedSql)
+                && !containsWhereClause(normalizedSql)) {
             return false;
         }
 
         return true;
     }
 
+    private String normalize(String sql) {
+
+        String normalized = sql.trim();
+
+        normalized = normalized.replaceAll(";\\s*$", "");
+
+        normalized = normalized
+                .replaceAll("\\s+", " ")
+                .toLowerCase();
+
+        return normalized;
+    }
+
+    private boolean containsMultipleStatements(String sql) {
+        return sql.contains(";");
+    }
+
+    private boolean containsComments(String sql) {
+        return sql.contains("--")
+                || sql.contains("/*")
+                || sql.contains("*/");
+    }
+
+    private boolean containsDangerousKeyword(String sql) {
+
+        for (String keyword : DANGEROUS_KEYWORDS) {
+
+            if (sql.matches(".*\\b" + keyword + "\\b.*")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isUpdateOrDelete(String sql) {
+        return sql.startsWith("update ")
+                || sql.startsWith("delete ");
+    }
+
+    private boolean containsWhereClause(String sql) {
+        return sql.matches(".*\\bwhere\\b.*");
+    }
+
     private boolean usesAllowedTable(String sql) {
 
         for (String table : ALLOWED_TABLES) {
 
-            if (sql.matches(
-                    ".*\\b" + table + "\\b.*")) {
-
+            if (sql.matches("^(insert\\s+into|update|delete\\s+from)\\s+"
+                    + table + "\\b.*")) {
                 return true;
             }
         }
